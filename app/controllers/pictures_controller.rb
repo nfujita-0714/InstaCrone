@@ -1,12 +1,17 @@
 class PicturesController < ApplicationController
-  before_action :set_picture, only: %i[ show edit update destroy ]
+  before_action :set_picture, only: %i[show edit update destroy]
+  before_action :authenticate_user, only: [:edit, :update, :destroy]
 
   def index
     @pictures = Picture.all
   end
 
   def show
-    @favorite = current_user.favorites.find_by(picture_id: @picture.id)
+    if logged_in?
+      @favorite = current_user.favorites.find_by(picture_id: @picture.id)
+    else
+      redirect_to new_user_path, notice:"ログインが必要です"
+    end
   end
 
   def new
@@ -22,6 +27,7 @@ class PicturesController < ApplicationController
   end
 
   def create
+    @picture = Picture.new(picture_params)
     @picture = current_user.pictures.build(picture_params)
     if params[:back]
       render :new
@@ -60,4 +66,10 @@ class PicturesController < ApplicationController
     def picture_params
       params.require(:picture).permit(:title, :content, :user_id, :image, :image_cache)
     end
+
+    def ensure_user
+      @pictures = current_user.pictures
+      @picture = @pictures.find_by(id: params[:id])
+      redirect_to new_picture_path unless @picture
+    end  
 end
