@@ -15,7 +15,6 @@ class PicturesController < ApplicationController
   end
 
   def new
-    @picture = Picture.new
     if params[:back]
       @picture = Picture.new(picture_params)
     else
@@ -27,13 +26,14 @@ class PicturesController < ApplicationController
   end
 
   def create
-    @picture = Picture.new(picture_params)
+    # @picture = Picture.new(picture_params)
     @picture = current_user.pictures.build(picture_params)
     if params[:back]
       render :new
     else
       if @picture.save
-        redirect_to pictures_path
+        PictureMailer.picture_mail(@picture).deliver
+        redirect_to pictures_path, notice:"Picture was successfully created."
       else
         render :new
       end
@@ -42,7 +42,7 @@ class PicturesController < ApplicationController
 
   def update
     if @picture.update(picture_params)
-      redirect_to pictures_path, notice: "ブログを編集しました！"
+      redirect_to pictures_path, notice:"ブログを編集しました！"
     else
       render :edit
     end
@@ -54,22 +54,23 @@ class PicturesController < ApplicationController
   end
 
   def confirm
+    @picture = Picture.new(picture_params)
     @picture = current_user.pictures.build(picture_params)
     render :new if @picture.invalid?
   end
 
   private
-    def set_picture
-      @picture = Picture.find(params[:id])
-    end
+  def set_picture
+  @picture = Picture.find(params[:id])
+  end
 
-    def picture_params
-      params.require(:picture).permit(:title, :content, :user_id, :image, :image_cache)
-    end
+  def picture_params
+  params.require(:picture).permit(:title, :content, :user_id, :image, :image_cache)
+  end
 
-    def ensure_user
-      @pictures = current_user.pictures
-      @picture = @pictures.find_by(id: params[:id])
-      redirect_to new_picture_path unless @picture
-    end  
+  def ensure_user
+  @pictures = current_user.pictures
+  @picture = @pictures.find_by(id: params[:id])
+  redirect_to new_picture_path unless @picture
+  end  
 end
